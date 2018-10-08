@@ -99,11 +99,6 @@ class AndroidProjectRenamer:
 
     @staticmethod
     def dir_contains(path: str, var: str):
-        """
-        :param path:
-        :param var:
-        :return: True if dir or file with name :param var: is in directory with path :param path:
-        """
         import os
         try:
             var = str(var)
