@@ -9,6 +9,8 @@ ERROR_COLOR = "\033[1;31;m"
 SUCCESS_COLOR = "\033[1;32;m"
 WARN_COLOR = "\033[1;33;m"
 ACCENT_COLOR = "\033[1;36;m"
+LOG = DEFAULT_COLOR + "[LOG]: "
+
 
 class AndroidProjectRenamerException(Exception):
     def __init__(self, what):
@@ -19,7 +21,6 @@ class AndroidProjectRenamerException(Exception):
 
 
 class AndroidProjectRenamer:
-
     project_path: str
     new_package: str
     old_package: str
@@ -48,7 +49,8 @@ class AndroidProjectRenamer:
         if re.match(r"^[a-z]+(\.[a-z]+)+$", package):
             if package != self.old_package:
                 self.new_package = str(package)
-            else: raise AndroidProjectRenamerException("This package name is already uses: " + package)
+            else:
+                raise AndroidProjectRenamerException("This package name is already uses: " + package)
         else:
             raise AndroidProjectRenamerException("Incorrect package name: " + package)
 
@@ -97,6 +99,11 @@ class AndroidProjectRenamer:
 
     @staticmethod
     def dir_contains(path: str, var: str):
+        """
+        :param path:
+        :param var:
+        :return: True if dir or file with name :param var: is in directory with path :param path:
+        """
         import os
         try:
             var = str(var)
@@ -104,7 +111,7 @@ class AndroidProjectRenamer:
                 return True
             return False
         except:
-            raise AndroidProjectRenamerException("Wrong path: " + path)
+            return False
 
     def create_new_package_dirs(self):
         if self.new_package is None:
@@ -113,14 +120,18 @@ class AndroidProjectRenamer:
         import os
 
         def create_package_dirs(path: str, package_dir_list: list):
-            # TODO: Выдаёт ошибку file exists когда новый пакет является укороченной версией старого
+            is_already_exists = True
             path = self.path_append(path, "java")
             for directory in package_dir_list:
+                if not self.dir_contains(path, directory):
+                    is_already_exists = False
                 path = self.path_append(path, directory)
-            try:
-                os.makedirs(path)
-            except FileExistsError:
-                raise AndroidProjectRenamerException("Files with this path already exists: " + path)
+
+            if not is_already_exists:
+                try:
+                    os.makedirs(path)
+                except FileExistsError:
+                    raise AndroidProjectRenamerException("Files with this path already exists: " + path)
 
         path = self.project_path
         path = self.path_append(path, "app")
@@ -143,12 +154,14 @@ class AndroidProjectRenamer:
         if not self.moved:
             raise AndroidProjectRenamerException("Files must be moved before updating package")
 
+        import os
+
         path = self.project_path
         path = self.path_append(path, "app")
         path = self.path_append(path, "src")
 
-        def update_package(path: str, part: str):
-            path = self.path_append(path, part)
+        def update_package(path: str):
+            path = self.path_append(path, "java")
             package_dir_list = self.new_package.split(".")
 
             for directory in package_dir_list:
@@ -163,13 +176,13 @@ class AndroidProjectRenamer:
                     file.writelines(lines)
 
         if "androidTest" in os.listdir(path):
-            update_package(path, "androidTest")
+            update_package(self.path_append(path, "androidTest"))
 
         if "test" in os.listdir(path):
-            update_package(path, "test")
+            update_package(self.path_append(path, "test"))
 
         if "main" in os.listdir(path):
-            update_package(path, "main")
+            update_package(self.path_append(path, "main"))
 
     def update_manifest(self):
         lines = ""
@@ -205,18 +218,25 @@ class AndroidProjectRenamer:
 
             for file in os.listdir(src):
                 shutil.move(self.path_append(src, file), dst)
+                print(LOG + "File {} has new package path".format(file))
+
+            try:
+                os.removedirs(src)
+                print(LOG + "Old package path removed")
+            except:
+                print(LOG + "Nothing to remove")
 
         path = self.project_path
         path = self.path_append(path, "app")
         path = self.path_append(path, "src")
 
-        if "androidTest" in os.listdir(path):
+        if self.dir_contains(path, "androidTest"):
             move(path, "androidTest")
 
-        if "test" in os.listdir(path):
+        if self.dir_contains(path, "test"):
             move(path, "test")
 
-        if "main" in os.listdir(path):
+        if self.dir_contains(path, "main"):
             move(path, "main")
 
         self.moved = True
@@ -226,7 +246,7 @@ if __name__ == "__main__":
     print(ACCENT_COLOR + WELCOME_TEXT)
     try:
         renamer = AndroidProjectRenamer("/Users/princessyork/Development/Android/AndroidStudioProjects/Test")
-        renamer.set_new_package("test.package")
+        renamer.set_new_package("com.org.test.sample")
         print(DEFAULT_COLOR + "Old package: " + renamer.old_package)
         print(ACCENT_COLOR + "Will be changed to")
         print(DEFAULT_COLOR + "New package: " + renamer.new_package)
@@ -234,7 +254,7 @@ if __name__ == "__main__":
         renamer.create_new_package_dirs()
         renamer.update_manifest()
         renamer.move_files()
-        renamer.update_files_package()
+        # renamer.update_files_package()
     except AndroidProjectRenamerException as e:
         print(ERROR_COLOR + e.what)
     except KeyboardInterrupt:
