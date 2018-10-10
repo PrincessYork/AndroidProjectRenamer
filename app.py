@@ -11,6 +11,8 @@ WARN_COLOR = "\033[1;33;m"
 ACCENT_COLOR = "\033[1;36;m"
 LOG = DEFAULT_COLOR + "[LOG]: "
 
+IGNORE_FILES = (".DS_Store")
+
 
 class AndroidProjectRenamerException(Exception):
     def __init__(self, what):
@@ -46,13 +48,18 @@ class AndroidProjectRenamer:
     def set_new_package(self, package: str):
         import re
         package = package.lower()
-        if re.match(r"^[a-z]+(\.[a-z]+)+$", package):
+        if re.match(r"^[a-z]+(\.[a-z]+)+$", package)\
+                and (package.find("package") == -1)\
+                and (package.find("new") == -1)\
+                and (package.find("this") == -1):
             if package != self.old_package:
                 self.new_package = str(package)
             else:
                 raise AndroidProjectRenamerException("This package name is already uses: " + package)
         else:
-            raise AndroidProjectRenamerException("Incorrect package name: " + package)
+            raise AndroidProjectRenamerException("Incorrect package name: "
+                                                 + package +
+                                                 "\nMake sure you are not using this words: package, new, this")
 
     def get_old_package(self):
         import re
@@ -164,10 +171,10 @@ class AndroidProjectRenamer:
 
             for file_name in os.listdir(path):
                 lines = ""
-                with open(self.path_append(path, file_name)) as file:
+                with open(self.path_append(path, file_name), encoding="utf-8") as file:
                     for line in file:
                         lines += line.replace(self.old_package, self.new_package)
-                with open(self.path_append(path, file_name), 'w') as file:
+                with open(self.path_append(path, file_name), 'w', encoding="utf-8") as file:
                     file.writelines(lines)
 
         if "androidTest" in os.listdir(path):
@@ -212,14 +219,11 @@ class AndroidProjectRenamer:
                 dst = self.path_append(dst, directory)
 
             for file in os.listdir(src):
-                shutil.move(self.path_append(src, file), dst)
-                print(LOG + "File {} has new package path".format(file))
-
-            try:
-                os.removedirs(src)
-                print(LOG + "Old package path removed")
-            except:
-                print(LOG + "Nothing to remove")
+                if file not in IGNORE_FILES:
+                    shutil.move(self.path_append(src, file), dst)
+                    print(LOG + "File {} has new package path".format(file))
+                else:
+                    print(LOG + "File {} ignored".format(file))
 
         path = self.project_path
         path = self.path_append(path, "app")
@@ -236,12 +240,60 @@ class AndroidProjectRenamer:
 
         self.moved = True
 
+    def remove_old_package_dirs(self):
+        import os
+        import shutil
+        if self.new_package.startswith(self.old_package):  # новый пакет является дополнением старого
+            print(LOG + "Nothing to remove")
+        elif self.old_package.startswith(self.new_package):  # новый пакет является обрезанным старым
+            useless_dirs = self.old_package.replace(self.new_package, "").split(".")
+            path = self.path_append(self.project_path, "app")
+            path = self.path_append(path, "src")
+
+            def remove_useless_dirs(part: str):
+                remove_path = self.path_append(path, part)
+                remove_path = self.path_append(remove_path, "java")
+                for directory in self.new_package.split("."):
+                    remove_path = self.path_append(remove_path, directory)
+                if self.dir_contains(remove_path, useless_dirs[0]):
+                    shutil.rmtree(self.path_append(remove_path, useless_dirs[0]))
+                    print(LOG + "remove directory: " + self.path_append(remove_path, useless_dirs[0]))
+
+            if self.dir_contains(path, "androidTest"):
+                remove_useless_dirs("androidTest")
+
+            if self.dir_contains(path, "test"):
+                remove_useless_dirs("test")
+
+            if self.dir_contains(path, "main"):
+                remove_useless_dirs("main")
+        else:  # новый не является обрезанным старым и не дополняет его
+            path = self.path_append(self.project_path, "app")
+            path = self.path_append(path, "src")
+            useless_dirs = self.old_package.split(".")
+
+            def remove_useless_dirs(part: str):
+                remove_path = self.path_append(path, part)
+                remove_path = self.path_append(remove_path, "java")
+                if self.dir_contains(remove_path, useless_dirs[0]):
+                    shutil.rmtree(self.path_append(remove_path, useless_dirs[0]))
+                    print(LOG + "remove directory: " + self.path_append(remove_path, useless_dirs[0]))
+
+            if self.dir_contains(path, "androidTest"):
+                remove_useless_dirs("androidTest")
+
+            if self.dir_contains(path, "test"):
+                remove_useless_dirs("test")
+
+            if self.dir_contains(path, "main"):
+                remove_useless_dirs("main")
+
 
 if __name__ == "__main__":
     print(ACCENT_COLOR + WELCOME_TEXT)
     try:
         renamer = AndroidProjectRenamer("/Users/princessyork/Development/Android/AndroidStudioProjects/Test")
-        renamer.set_new_package("com.org.test.sample")
+        renamer.set_new_package("princess.york")
         print(DEFAULT_COLOR + "Old package: " + renamer.old_package)
         print(ACCENT_COLOR + "Will be changed to")
         print(DEFAULT_COLOR + "New package: " + renamer.new_package)
@@ -249,6 +301,7 @@ if __name__ == "__main__":
         renamer.create_new_package_dirs()
         renamer.update_manifest()
         renamer.move_files()
+        renamer.remove_old_package_dirs()
         # renamer.update_files_package()
     except AndroidProjectRenamerException as e:
         print(ERROR_COLOR + e.what)
