@@ -255,9 +255,9 @@ class AndroidProjectRenamer:
                 remove_path = self.path_append(remove_path, "java")
                 for directory in self.new_package.split("."):
                     remove_path = self.path_append(remove_path, directory)
-                if self.dir_contains(remove_path, useless_dirs[0]):
-                    shutil.rmtree(self.path_append(remove_path, useless_dirs[0]))
-                    print(LOG + "remove directory: " + self.path_append(remove_path, useless_dirs[0]))
+                if self.dir_contains(remove_path, useless_dirs[1]):
+                    shutil.rmtree(self.path_append(remove_path, useless_dirs[1]))
+                    print(LOG + "remove directory: " + self.path_append(remove_path, useless_dirs[1]))
 
             if self.dir_contains(path, "androidTest"):
                 remove_useless_dirs("androidTest")
