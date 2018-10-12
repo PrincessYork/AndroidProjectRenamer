@@ -292,8 +292,10 @@ class AndroidProjectRenamer:
 if __name__ == "__main__":
     print(ACCENT_COLOR + WELCOME_TEXT)
     try:
-        renamer = AndroidProjectRenamer("/Users/princessyork/Development/Android/AndroidStudioProjects/Test")
-        renamer.set_new_package("princess.york")
+        path = input(DEFAULT_COLOR + "Project path: ")
+        renamer = AndroidProjectRenamer(path)
+        package = input(DEFAULT_COLOR + "New package name: ")
+        renamer.set_new_package(package)
         print(DEFAULT_COLOR + "Old package: " + renamer.old_package)
         print(ACCENT_COLOR + "Will be changed to")
         print(DEFAULT_COLOR + "New package: " + renamer.new_package)
@@ -302,9 +304,13 @@ if __name__ == "__main__":
         renamer.update_manifest()
         renamer.move_files()
         renamer.remove_old_package_dirs()
-        # renamer.update_files_package()
+        renamer.update_files_package()
     except AndroidProjectRenamerException as e:
+        print()
         print(ERROR_COLOR + e.what)
     except KeyboardInterrupt:
         print()
         print(WARN_COLOR + "Execution is terminated")
+    except Exception as e:
+        print()
+        print(e)
