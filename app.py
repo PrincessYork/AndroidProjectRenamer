@@ -1,9 +1,15 @@
 WELCOME_TEXT = """
-Hi! This is the AndroidProjectRenamer script.
-Type your text in the fields to change some
-properties of your project.
-!!!Don't forget to make a backup before doing it!!!
+AndroidRenamer script 1.0
+Developed by PrincessYork 2018
+
+Follow the instruction to change your's project package.
+!!!DON'T FORGET TO MAKE A BACKUP BEFORE DOING IT!!!
 """
+FINAL_TEXT = """
+Well done! Finally, you should make 'Build/Clean Project' and rebuild project.
+P.S. I hope that the result will satisfy you =)
+"""
+
 DEFAULT_COLOR = "\033[;;m"
 ERROR_COLOR = "\033[1;31;m"
 SUCCESS_COLOR = "\033[1;32;m"
@@ -194,6 +200,16 @@ class AndroidProjectRenamer:
         with open(self.manifest_path, 'w') as file:
             file.writelines(lines)
 
+    def update_build_gradle(self):
+        build_gradle_path = self.path_append(self.project_path, "app")
+        build_gradle_path = self.path_append(build_gradle_path, "build.gradle")
+        lines = ""
+        with open(build_gradle_path) as file:
+            for line in file:
+                lines += line.replace(self.old_package, self.new_package)
+        with open(build_gradle_path, 'w') as file:
+            file.writelines(lines)
+
     def move_files(self):
         if not self.ready_to_move:
             raise AndroidProjectRenamerException("Can't move files: new package dirs are not exist")
@@ -301,10 +317,12 @@ if __name__ == "__main__":
         print(DEFAULT_COLOR + "New package: " + renamer.new_package)
         input(SUCCESS_COLOR + "Press enter to continue...")
         renamer.create_new_package_dirs()
-        renamer.update_manifest()
         renamer.move_files()
         renamer.remove_old_package_dirs()
+        renamer.update_manifest()
         renamer.update_files_package()
+        renamer.update_build_gradle()
+        print(SUCCESS_COLOR + FINAL_TEXT)
     except AndroidProjectRenamerException as e:
         print()
         print(ERROR_COLOR + e.what)
@@ -313,4 +331,4 @@ if __name__ == "__main__":
         print(WARN_COLOR + "Execution is terminated")
     except Exception as e:
         print()
-        print(e)
+        print(ERROR_COLOR + str(e))
