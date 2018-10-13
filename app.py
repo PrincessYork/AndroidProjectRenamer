@@ -1,5 +1,5 @@
 WELCOME_TEXT = """
-AndroidRenamer script 1.0
+AndroidProjectRenamer script 1.0
 Developed by PrincessYork 2018
 
 Follow the instruction to change your's project package.
