@@ -1,5 +1,8 @@
 # AndroidProjectRenamer
 
+# What is
+AndroidProjectRenamer is simple Python script to change package name of your AndroidStudio project.
+
 # How to use
 1. [Download](https://github.com/PrincessYork/AndroidProjectRenamer/archive/master.zip)
 2. Unarchive
