@@ -21,9 +21,9 @@ Follow the instruction to change your's project package.
 
 Project path: /Users/user/Development/AndroidStudioProjects/Test
 New package name: test.sample
-Old package: sample.test.sample
-Will be changed to
-New package: test.sample
+
+Detected old package: sample.test.sample
+sample.test.sample will be changed to test.sample
 Press enter to continue...
 [LOG]: File MainActivity.java has new package path
 [LOG]: remove directory: /Users/princessyork/Development/Android/AndroidStudioProjects/Test/app/src/androidTest/java/princess
